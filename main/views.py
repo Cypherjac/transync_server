@@ -89,21 +89,25 @@ def identify_direct(request):
 
             if ocr_results is None:
                 return JsonResponse({'error': 'OCR processing failed'}, status=500)
-
-            formatted_results = []
-            for line in ocr_results:
-                for word_info in line:
-                    formatted_results.append({
-                        'text': re.sub(" ", "", word_info[1][0]),
-                        'confidence': word_info[1][1],
-                        'bounding_box': word_info[0]
-                    })
             
-            send_url = 'http://localhost:3000/api/trips'
+            formatted_results = []
+            try:
+                for line in ocr_results:
+                    for word_info in line:
+                        formatted_results.append({
+                            'text': re.sub(" ", "", word_info[1][0]),
+                            'confidence': word_info[1][1],
+                            'bounding_box': word_info[0]
+                        })
+            except Exception as e:
+                return JsonResponse({'error': str(e)}, status=500)
+            
+            send_url = 'https://transync-app.vercel.app/api/trips_v2'
+            # send_url = 'http://localhost:3000/api/trips_v2'
             response = requests.post(send_url, json={'results': formatted_results})
             if response.status_code != 200:
                 return JsonResponse({'error': 'Failed to send data to another endpoint'}, status=500)
-
+            
             return JsonResponse({'results': formatted_results}, status=200)
         except Exception as e:
             print(f"Error: {e}")
